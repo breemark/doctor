@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\User;
+use Illuminate\Support\Facades\Storage;
+
 class DoctorController extends Controller
 {
     /**
@@ -13,9 +15,9 @@ class DoctorController extends Controller
      */
     public function index()
     {
-    
-        $users  = User::where('role_id','!=',3)->get();
-        return view('admin.doctor.index',compact('users'));
+
+        $users  = User::where('role_id', '!=', 3)->get();
+        return view('admin.doctor.index', compact('users'));
     }
 
     /**
@@ -44,10 +46,7 @@ class DoctorController extends Controller
         $data['password'] = bcrypt($request->password);
         User::create($data);
 
-        return redirect()->back()->with('message','Doctor added successfully');
-
-
-        
+        return redirect()->back()->with('message', 'Doctor added successfully');
     }
 
     /**
@@ -59,7 +58,7 @@ class DoctorController extends Controller
     public function show($id)
     {
         $user = User::find($id);
-        return view('admin.doctor.delete',compact('user'));
+        return view('admin.doctor.delete', compact('user'));
     }
 
     /**
@@ -71,7 +70,7 @@ class DoctorController extends Controller
     public function edit($id)
     {
         $user = User::find($id);
-        return view('admin.doctor.edit',compact('user'));
+        return view('admin.doctor.edit', compact('user'));
     }
 
     /**
@@ -83,24 +82,28 @@ class DoctorController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $this->validateUpdate($request,$id);
+        $this->validateUpdate($request, $id);
         $data = $request->all();
         $user = User::find($id);
         $imageName = $user->image;
         $userPassword = $user->password;
-        if($request->hasFile('image')){
-            $imageName =(new User)->userAvatar($request);
-            unlink(public_path('images/'.$user->image));
+        if ($request->hasFile('image')) {
+            $imageName = (new User)->userAvatar($request);
+
+            $isExists = Storage::exists(public_path('images/' . $user->image));
+
+            if ($isExists) {
+                unlink(public_path('images/' . $user->image));
+            }
         }
         $data['image'] = $imageName;
-        if($request->password){
+        if ($request->password) {
             $data['password'] = bcrypt($request->password);
-        }else{
+        } else {
             $data['password'] = $userPassword;
         }
-         $user->update($data);
-        return redirect()->route('doctor.index')->with('message','Doctor updated successfully');
-
+        $user->update($data);
+        return redirect()->route('doctor.index')->with('message', 'Doctor updated successfully');
     }
 
     /**
@@ -111,52 +114,49 @@ class DoctorController extends Controller
      */
     public function destroy($id)
     {
-       if(auth()->user()->id == $id){
+        if (auth()->user()->id == $id) {
             abort(401);
-       }
-       $user = User::find($id);
-       $userDelete = $user->delete();
-       if($userDelete){
-        unlink(public_path('images/'.$user->image));
-       }
-        return redirect()->route('doctor.index')->with('message','Doctor deleted successfully');
-
+        }
+        $user = User::find($id);
+        $userDelete = $user->delete();
+        if ($userDelete) {
+            unlink(public_path('images/' . $user->image));
+        }
+        return redirect()->route('doctor.index')->with('message', 'Doctor deleted successfully');
     }
 
-    public function validateStore($request){
-        return  $this->validate($request,[
-            'name'=>'required',
-            'email'=>'required|unique:users',
-            'password'=>'required|min:6|max:25',
-            'gender'=>'required',
-            'education'=>'required',
-            'address'=>'required',
-            'department'=>'required',
-            'phone_number'=>'required|numeric',
-            'image'=>'required|mimes:jpeg,jpg,png',
-            'role_id'=>'required',
-            'description'=>'required'
+    public function validateStore($request)
+    {
+        return  $this->validate($request, [
+            'name' => 'required',
+            'email' => 'required|unique:users',
+            'password' => 'required|min:6|max:25',
+            'gender' => 'required',
+            // 'education' => 'required',
+            // 'address' => 'required',
+            // 'department' => 'required',
+            // 'phone_number' => 'required|numeric',
+            'image' => 'required|mimes:jpeg,jpg,png',
+            'role_id' => 'required',
+            // 'description' => 'required'
 
-       ]);
+        ]);
     }
-    public function validateUpdate($request,$id){
-        return  $this->validate($request,[
-            'name'=>'required',
-            'email'=>'required|unique:users,email,'.$id,
-          
-            'gender'=>'required',
-            'education'=>'required',
-            'address'=>'required',
-            'department'=>'required',
-            'phone_number'=>'required|numeric',
-            'image'=>'mimes:jpeg,jpg,png',
-            'role_id'=>'required',
-            'description'=>'required'
+    public function validateUpdate($request, $id)
+    {
+        return  $this->validate($request, [
+            'name' => 'required',
+            'email' => 'required|unique:users,email,' . $id,
 
-       ]);
+            'gender' => 'required',
+            // 'education' => 'required',
+            // 'address' => 'required',
+            // 'department' => 'required',
+            // 'phone_number' => 'required|numeric',
+            'image' => 'mimes:jpeg,jpg,png',
+            'role_id' => 'required',
+            // 'description' => 'required'
+
+        ]);
     }
-   
-
-
- 
 }
